@@ -50,6 +50,15 @@ EXPERIENCIA = {1: "68.880.000,00", 2: "303.600.000,00", 3: "432.000.000,00",
 GARANTIA = {1: "861.000,00", 2: "3.795.000,00", 3: "5.400.000,00",
             4: "468.000,00", 5: "1.350.000,00", 6: "708.000,00",
             7: "931.500,00"}
+GARANTIA_EXT = {
+    1: "oitocentos e sessenta e um mil Meticais",
+    2: "três milhões, setecentos e noventa e cinco mil Meticais",
+    3: "cinco milhões e quatrocentos mil Meticais",
+    4: "quatrocentos e sessenta e oito mil Meticais",
+    5: "um milhão, trezentos e cinquenta mil Meticais",
+    6: "setecentos e oito mil Meticais",
+    7: "novecentos e trinta e um mil e quinhentos Meticais",
+}
 # Caderno de Encargos, Parte II.1 - especificacoes tecnicas resumidas por lote
 ESPECS = {
     1: [("Máscara Cirúrgica com fita, Tipo 2 (pack 50)",
@@ -217,7 +226,7 @@ def page_capa(page):
     # tapa os blocos de texto antigos com o mesmo tom de fundo das faixas
     bg = (0.9764706, 0.9764706, 0.96862745)
     page.draw_rect(pymupdf.Rect(55, 130, 592, 166), color=None, fill=bg)
-    page.draw_rect(pymupdf.Rect(94, 402, 585, 444), color=None, fill=bg)
+    page.draw_rect(pymupdf.Rect(40, 392, 600, 452), color=None, fill=bg)
     page.draw_rect(pymupdf.Rect(122, 470, 490, 568), color=None, fill=bg)
     page.draw_rect(pymupdf.Rect(300, 262, 458, 310), color=None, fill=bg)
     # remove a data antiga do modelo (faixa inferior)
@@ -234,9 +243,9 @@ def page_capa(page):
 
     # cliente
     ctr("CENTRAL DE MEDICAMENTOS E ARTIGOS MÉDICOS, IP", 150, 14.5)
-    # referencia do concurso
-    ctr("Concurso Público Nº 58A001241/CP/03/OE", 419, 11.2, x0=94, x1=585)
-    ctr("Material Médico-Cirúrgicos de Grande Rotação/026", 434, 11.2,
+    # referencia do concurso — negrito, corpo 26
+    ctr("Concurso Público Nº 58A001241/CP/03/OE", 424, 26)
+    ctr("Material Médico-Cirúrgicos de Grande Rotação/026", 444, 11.2,
         x0=94, x1=585)
     # nome do concurso / objecto
     ctr("MATERIAL MÉDICO-CIRÚRGICO", 492, 15.5, x0=122, x1=490)
@@ -264,6 +273,8 @@ def html_indice(paginas):
         row("", "Planilhas de Preços — Lotes 1 a 7",
             f"{paginas['pl0']}-{paginas['pl1']}"),
         row("7.0", "REQUISITOS PARA QUALIFICAÇÃO E ANEXOS", paginas["req"]),
+        row("8.0", "DECLARAÇÕES DE GARANTIA PROVISÓRIA (Lotes 1 a 7)",
+            f"{paginas['dec0']}-{paginas['dec1']}"),
     ])
     tabs = "".join([
         row("Tabela 1", "Informações do Concorrente", 4),
@@ -275,6 +286,8 @@ def html_indice(paginas):
         row("Tabela 6", "Resumo financeiro por lote", paginas["fin"]),
         row("Tabela 7", "Planilhas de preços dos bens (Lotes 1 a 7)",
             f"{paginas['pl0']}-{paginas['pl1']}"),
+        row("Tabela 8", "Declarações de Garantia Provisória por lote",
+            f"{paginas['dec0']}-{paginas['dec1']}"),
         row("Figura 1", "Marcas e representações", 7),
     ])
     return f"""
@@ -423,19 +436,22 @@ def html_modelo(lotes, cont=False):
             f"<tr><td class='c'>{i['item']}</td><td>{i['desc']}</td>"
             f"<td class='c'>{i['pais']}</td>"
             f"<td class='r'>{int(i['qtd']):,}</td>".replace(",", ".") +
-            f"<td class='r'>{mt(i['pu'])}</td><td class='r'>{mt(i['com'])}</td></tr>"
+            f"<td class='r'>{mt(i['pu'])}</td><td class='r'>{mt(i['com'])}</td>"
+            f"<td class='r'>{mt(i['usd'])}</td></tr>"
             for i in it)
         out += f"""
 <h3>Lote {n} — {LOTE_NOMES[n]}</h3>
-<table><colgroup><col style='width:6%'/><col style='width:40%'/>
-<col style='width:10%'/><col style='width:13%'/><col style='width:13%'/>
-<col style='width:18%'/></colgroup>
+<table><colgroup><col style='width:5%'/><col style='width:32%'/>
+<col style='width:9%'/><col style='width:12%'/><col style='width:11%'/>
+<col style='width:16%'/><col style='width:15%'/></colgroup>
 <tr><th class='c'>Item</th><th>Descrição do bem proposto</th>
 <th class='c'>País de<br/>origem</th><th class='r'>Quantidade</th>
-<th class='r'>Preço unit.<br/>(MT)</th><th class='r'>Total c/IVA<br/>(MT)</th></tr>
+<th class='r'>Preço unit.<br/>(MT)</th><th class='r'>Total c/IVA<br/>(MT)</th>
+<th class='r'>Total c/IVA<br/>(USD)</th></tr>
 {linhas}
 <tr class='tot'><td colspan='5'>TOTAL DO LOTE {n} (c/IVA)</td>
-<td class='r'>{mt(TOT[n]['com'])}</td></tr>
+<td class='r'>{mt(TOT[n]['com'])}</td>
+<td class='r'>{mt(TOT[n]['usd'])}</td></tr>
 </table>"""
     cap = ("Tabela 5. Modelo Proposto Por Infinity Health, SA" +
            (" (continuação)" if cont else ""))
@@ -452,7 +468,8 @@ def html_financeira(pl0, pl1):
     alineas = "".join(
         f"<tr><td class='c'>Lote {n}</td><td>{LOTE_NOMES[n]}</td>"
         f"<td class='r'>{mt(TOT[n]['sem'])}</td><td class='r'>{mt(TOT[n]['iva'])}</td>"
-        f"<td class='r'>{mt(TOT[n]['com'])}</td></tr>" for n in range(1, 8))
+        f"<td class='r'>{mt(TOT[n]['com'])}</td>"
+        f"<td class='r'>{mt(TOT[n]['usd'])}</td></tr>" for n in range(1, 8))
     return f"""
 <p>a) Examinámos os documentos do <b>{CONCURSO_FULL}</b>, promovido pela {ENTIDADE}, e
 apresentamos a nossa proposta sem reservas para a contratação de fornecimento de material
@@ -460,15 +477,16 @@ médico cirúrgico de grande rotação (Equipamentos de Proteção Individual) p
 Nacional de Saúde, em conformidade com o respectivo Caderno de Encargos.</p>
 <p>b) Os preços da nossa proposta constam das Planilhas de Preços (páginas {pl0} a {pl1}),
 sendo os valores totais por lote, com IVA de 16% incluído, os seguintes:</p>
-<table><colgroup><col style='width:9%'/><col style='width:36%'/>
-<col style='width:19%'/><col style='width:17%'/><col style='width:19%'/></colgroup>
+<table><colgroup><col style='width:8%'/><col style='width:27%'/>
+<col style='width:17%'/><col style='width:15%'/><col style='width:17%'/>
+<col style='width:16%'/></colgroup>
 <tr><th class='c'>Lote</th><th>Designação</th>
 <th class='r'>Total s/IVA (MT)</th><th class='r'>IVA 16% (MT)</th>
-<th class='r'>Total c/IVA (MT)</th></tr>
+<th class='r'>Total c/IVA (MT)</th><th class='r'>Total c/IVA (USD)</th></tr>
 {alineas}
 <tr class='tot'><td colspan='2'>TOTAL GERAL DOS SETE LOTES</td>
 <td class='r'>{mt(GT['sem'])}</td><td class='r'>{mt(GT['iva'])}</td>
-<td class='r'>{mt(GT['com'])}</td></tr>
+<td class='r'>{mt(GT['com'])}</td><td class='r'>{mt(GT['usd'])}</td></tr>
 </table>
 <div class='cap'>Tabela 6. Resumo financeiro por lote</div>
 <p class='small'>Valor total da proposta: <b>{mt(GT['com'])} MT</b>, IVA de 16% incluído
@@ -562,6 +580,56 @@ recurso hierárquico em 3 dias ao Ministro da Saúde, mediante caução de 125.0
 """
 
 
+def html_declaracao(n):
+    """Modelo de Declaração de Garantia Provisória — III.2.1.1 do Caderno de
+    Encargos, nos termos do nº 2 do artigo 105 do Decreto nº 79/2022."""
+    return f"""
+<p class='small' style='text-align:center'><b>(Apresentada juntamente com a proposta,
+em alternativa à Garantia Provisória, nos termos do ponto 24.2 do Caderno de Encargos e
+do nº 2 do artigo 105 do Decreto nº 79/2022, de 30 de Dezembro)</b></p>
+<p><b>Nº do Concurso:</b> {CONCURSO_FULL}</p>
+<p><b>Lote {n} — {LOTE_NOMES[n]}</b></p>
+<p><b>Para:</b> {ENTIDADE}<br/>
+Av. de Moçambique nº 847, EN1 — Zimpeto, Cidade de Maputo — Moçambique</p>
+<p>Nós, <b>INFINITY HEALTH, SA</b>, com sede na Rua de França, nº 273, Bairro da Coop,
+Maputo — Moçambique, NUIT 401550216, representados por
+_________________________________ [indicar nome, endereço, identificação civil e NUIT],
+na qualidade de _________________________ [indicar a função que exerce], signatários
+desta proposta, declaramos nos termos do nº 2 do artigo 105 do Decreto nº 79/2022, de 30
+de Dezembro, que:</p>
+<p>Entendemos que, de acordo com as condições previstas nos Documentos de Concurso, as
+propostas devem ser acompanhadas de uma Declaração de Garantia Provisória no montante de
+<b>{GARANTIA[n]} MT</b> ({GARANTIA_EXT[n]}), referente ao <b>Lote {n}</b>, conforme
+fixado no ponto 24.1 do Caderno de Encargos.</p>
+<p>Aceitamos que seremos automaticamente sujeitos ao pagamento de multa de valor igual ao
+da Garantia Provisória ou proibidos de contratar com o Estado por período de um (1) ano
+e, em caso de reincidência, por período de cinco (5) anos, a partir da data de
+notificação pela Unidade Funcional de Supervisão das Aquisições, de acordo com o
+preceituado no artigo 284 do Regulamento, aprovado pelo Decreto nº 79/2022, de 30 de
+Dezembro, se violarmos as nossas obrigações nas condições da proposta, nos seguintes
+casos:</p>
+<ul>
+<li>(a) Retirarmos ou modificarmos a nossa proposta antes de expirar a data da validade
+da mesma especificada na Proposta; ou</li>
+<li>(b) Tendo sido notificados da aceitação da nossa proposta pela Entidade Contratante
+dentro da validade da Proposta, (i) nos recusarmos a assinar o Contrato; (ii) nos
+recusarmos a fornecer a Garantia Definitiva.</li>
+</ul>
+<p>Entendemos que esta Declaração de Garantia Provisória expirará nos seguintes casos:
+(i) não formos notificados como Concorrente vencedor; ou (ii) ao passar trinta (30) dias
+após expirar a data da validade da Proposta.</p>
+<p>A presente declaração é válida por <b>150 dias</b>, nos termos do ponto 24.3 do
+Caderno de Encargos.</p>
+<p style='margin-top:14pt'>Maputo, {DATA_EXT}</p>
+<p style='margin-top:26pt'>_______________________________________________<br/>
+[Assinatura do Representante com poderes suficientes — reconhecida pelo Cartório
+Notarial]</p>
+<p>_______________________________________________<br/>
+[Função/qualidade com que actua no acto — Proprietário, Director, Gerente, etc.]</p>
+<p class='small'>Pela INFINITY HEALTH, SA — NUIT 401550216</p>
+"""
+
+
 # ---------------------------------------------------------------- footer
 def fix_footer(page, num, total):
     """reescreve o numero de pagina preservando o estilo original"""
@@ -586,7 +654,9 @@ def main():
     p_pl0 = p_fin + 1
     p_pl1 = p_pl0 + 6
     p_req = p_pl1 + 1
-    total = p_req
+    p_dec0 = p_req + 1
+    p_dec1 = p_dec0 + 6
+    total = p_dec1
 
     # paginas 13 e 14 do original servem de molde; precisamos de n_modelo
     # paginas -> duplicar o molde limpo
@@ -598,15 +668,22 @@ def main():
     # NOTA: nao se usa delete_image porque o logotipo e partilhado por todas as
     # paginas; as imagens de produto ficam cobertas por clear_body().
 
+    # 7 paginas de Declaracao de Garantia Provisoria, clonadas do molde
+    # retrato (mesmo cabecalho, rodape e fundo)
+    for _ in range(7):
+        doc.fullcopy_page(p_req - 1)
+
     print("Estrutura:", f"modelo {p_lote0}-{p_lote1}, financeira {p_fin},",
-          f"planilhas {p_pl0}-{p_pl1}, requisitos {p_req}, total {total}")
+          f"planilhas {p_pl0}-{p_pl1}, requisitos {p_req},",
+          f"declaracoes {p_dec0}-{p_dec1}, total {total}")
 
     # --- capa -------------------------------------------------------------
     page_capa(doc[0])
 
     # --- indice (pag.2) ---------------------------------------------------
     fill(doc[1], html_indice(dict(lote_end=p_lote1, fin=p_fin, pl0=p_pl0,
-                                  pl1=p_pl1, req=p_req)), top=100)
+                                  pl1=p_pl1, req=p_req, dec0=p_dec0,
+                                  dec1=p_dec1)), top=100)
 
     # --- pag.8 objecto ----------------------------------------------------
     fill(doc[7], html_objecto(), top=122, title="4. Objecto da Proposta")
@@ -633,6 +710,12 @@ def main():
     # --- requisitos -------------------------------------------------------
     fill(doc[p_req - 1], html_requisitos(), top=122,
          title="7. Requisitos para Qualificação e Anexos")
+
+    # --- declaracoes de garantia provisoria -------------------------------
+    for k in range(7):
+        t = ("8. Declarações de Garantia Provisória" if k == 0
+             else "8. Declarações de Garantia Provisória (cont.)")
+        fill(doc[p_dec0 - 1 + k], html_declaracao(k + 1), top=122, title=t)
 
     # --- rodapes ----------------------------------------------------------
     for i in range(1, doc.page_count):
