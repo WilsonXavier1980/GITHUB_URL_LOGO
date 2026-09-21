@@ -226,7 +226,7 @@ def page_capa(page):
     # tapa os blocos de texto antigos com o mesmo tom de fundo das faixas
     bg = (0.9764706, 0.9764706, 0.96862745)
     page.draw_rect(pymupdf.Rect(55, 130, 592, 166), color=None, fill=bg)
-    page.draw_rect(pymupdf.Rect(40, 392, 600, 452), color=None, fill=bg)
+    page.draw_rect(pymupdf.Rect(18, 386, 600, 460), color=None, fill=bg)
     page.draw_rect(pymupdf.Rect(122, 470, 490, 568), color=None, fill=bg)
     page.draw_rect(pymupdf.Rect(300, 262, 458, 310), color=None, fill=bg)
     # remove a data antiga do modelo (faixa inferior)
@@ -236,17 +236,15 @@ def page_capa(page):
     def ctr(txt, y, size, bold=True, color=(0, 0, 0), x0=0, x1=612):
         ff = FONT_BOLD if bold else FONT_REG
         fn = "CarB" if bold else "CarR"
-        w = pymupdf.get_text_length(txt, fontname="hebo" if bold else "helv",
-                                    fontsize=size)
+        w = pymupdf.Font(fontfile=ff).text_length(txt, size)
         page.insert_text(((x0 + x1) / 2 - w / 2, y), txt, fontfile=ff,
                          fontname=fn, fontsize=size, color=color)
 
     # cliente
     ctr("CENTRAL DE MEDICAMENTOS E ARTIGOS MÉDICOS, IP", 150, 14.5)
     # referencia do concurso — negrito, corpo 26
-    ctr("Concurso Público Nº 58A001241/CP/03/OE", 424, 26)
-    ctr("Material Médico-Cirúrgicos de Grande Rotação/026", 444, 11.2,
-        x0=94, x1=585)
+    ctr("Concurso Público Nº 58A001241/CP/03/OE", 418, 26)
+    ctr("Material Médico-Cirúrgicos de Grande Rotação/026", 450, 26)
     # nome do concurso / objecto
     ctr("MATERIAL MÉDICO-CIRÚRGICO", 492, 15.5, x0=122, x1=490)
     ctr("DE GRANDE ROTAÇÃO", 513, 15.5, x0=122, x1=490)
